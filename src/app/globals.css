@@ -1,26 +1,96 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #030609;
+  --foreground: #f6fbff;
+  --panel: rgba(8, 15, 22, 0.68);
+  --panel-strong: rgba(9, 18, 27, 0.92);
+  --border: rgba(174, 228, 255, 0.18);
+  --cyan: #13c8ff;
+  --amber: #ff9f43;
+  --magenta: #e04cff;
+  --muted: #92a7b7;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-panel: var(--panel);
+  --color-panel-strong: var(--panel-strong);
+  --color-cinema-cyan: var(--cyan);
+  --color-cinema-amber: var(--amber);
+  --color-cinema-magenta: var(--magenta);
+  --color-cinema-muted: var(--muted);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: rgba(19, 200, 255, 0.28);
+  color: #ffffff;
+}
+
+::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #05090e;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #16475d, #0f2532);
+  border: 2px solid #05090e;
+  border-radius: 999px;
+}
+
+.cinema-bg {
+  background:
+    radial-gradient(circle at 80% 4%, rgba(19, 200, 255, 0.22), transparent 28rem),
+    radial-gradient(circle at 18% 12%, rgba(255, 159, 67, 0.09), transparent 26rem),
+    linear-gradient(180deg, #06101a 0%, #030609 44%, #020304 100%);
+}
+
+.glass {
+  background: linear-gradient(135deg, rgba(10, 20, 31, 0.78), rgba(3, 7, 12, 0.5));
+  border: 1px solid var(--border);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(22px);
+}
+
+.cinema-line {
+  background: linear-gradient(90deg, transparent, rgba(19, 200, 255, 0.8), rgba(255, 159, 67, 0.7), transparent);
+}
+
+.poster-shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.18), transparent 58%);
+  opacity: 0;
+  transform: translateX(-70%);
+  transition: opacity 240ms ease, transform 640ms ease;
+}
+
+.poster-shine:hover::after {
+  opacity: 1;
+  transform: translateX(70%);
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
 }
