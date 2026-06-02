@@ -1,11 +1,23 @@
-import { Heart, Play, Star, Tv } from "lucide-react";
+import { Play, Star, Tv } from "lucide-react";
 import type { Movie } from "@/types/domain";
 import { Button } from "@/components/ui/Button";
+import { FavoriteButton } from "@/components/movie/FavoriteButton";
 import { MovieRail } from "@/components/movie/MovieRail";
 import { getRelatedMovies } from "@/services/content-service";
+import type { ScoredMovie } from "@/services/recommendation/recommendation-score";
 import { formatDuration } from "@/utils/format";
 
-export function DetailView({ movie }: { movie: Movie }) {
+export function DetailView({
+  movie,
+  favorite = false,
+  favoriteIds = [],
+  intelligence,
+}: {
+  movie: Movie;
+  favorite?: boolean;
+  favoriteIds?: string[];
+  intelligence?: ScoredMovie;
+}) {
   const related = getRelatedMovies(movie.id);
 
   return (
@@ -47,14 +59,20 @@ export function DetailView({ movie }: { movie: Movie }) {
               <Button icon={<Tv size={18} />} variant="secondary">
                 Trailer
               </Button>
-              <Button icon={<Heart size={18} />} variant="ghost">
-                Favorito
-              </Button>
+              <FavoriteButton initialFavorite={favorite} label movieId={movie.id} />
             </div>
             <div className="mt-8 text-sm text-white/80">
               <span className="text-cinema-muted">Elenco: </span>
               {movie.cast.join(", ")}
             </div>
+            {intelligence ? (
+              <div className="mt-6 max-w-xl rounded-xl border border-cinema-cyan/22 bg-cinema-cyan/8 p-4">
+                <p className="text-sm font-semibold text-cinema-cyan">Selecionado especialmente para voce</p>
+                <p className="mt-2 text-sm leading-6 text-white/76">
+                  {intelligence.label}. Usuarios com sinais parecidos tendem a reagir bem a este conteudo.
+                </p>
+              </div>
+            ) : null}
           </div>
         </div>
       </section>
@@ -80,7 +98,7 @@ export function DetailView({ movie }: { movie: Movie }) {
       ) : null}
 
       <section className="mx-auto max-w-7xl px-5 pb-20 md:px-10">
-        <MovieRail movies={related} title="Recomendacoes relacionadas" />
+        <MovieRail favoriteIds={favoriteIds} movies={related} title="Recomendacoes relacionadas" />
       </section>
     </main>
   );

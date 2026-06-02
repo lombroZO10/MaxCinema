@@ -89,8 +89,50 @@ body {
   transform: translateX(70%);
 }
 
+.cinematic-sidebar-grain::before {
+  background-image:
+    radial-gradient(circle at 22% 18%, rgba(255, 255, 255, 0.045) 0 1px, transparent 1px),
+    radial-gradient(circle at 78% 62%, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px);
+  background-size: 34px 34px, 47px 47px;
+  content: "";
+  inset: 0;
+  opacity: 0.18;
+  pointer-events: none;
+  position: absolute;
+}
+
 @keyframes shimmer {
   100% {
     transform: translateX(100%);
   }
+}
+
+.player-range {
+  appearance: none;
+  border-radius: 999px;
+  cursor: pointer;
+  outline: none;
+}
+
+.player-range:disabled {
+  cursor: not-allowed;
+}
+
+.player-range::-webkit-slider-thumb {
+  appearance: none;
+  background: #ffffff;
+  border: 2px solid var(--cyan);
+  border-radius: 999px;
+  box-shadow: 0 0 22px rgba(19, 200, 255, 0.45);
+  height: 16px;
+  width: 16px;
+}
+
+.player-range::-moz-range-thumb {
+  background: #ffffff;
+  border: 2px solid var(--cyan);
+  border-radius: 999px;
+  box-shadow: 0 0 22px rgba(19, 200, 255, 0.45);
+  height: 16px;
+  width: 16px;
 }

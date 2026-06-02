@@ -1,8 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { hasSupabaseEnv } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { ACTIVE_PROFILE_COOKIE } from "@/services/profile/viewer-profile-service";
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -23,7 +25,7 @@ export async function signInAction(formData: FormData) {
     redirect(`/login?error=${encodeURIComponent("Email ou senha invalidos.")}`);
   }
 
-  redirect("/browse");
+  redirect("/profiles");
 }
 
 export async function signUpAction(formData: FormData) {
@@ -50,10 +52,13 @@ export async function signUpAction(formData: FormData) {
     redirect(`/register?error=${encodeURIComponent(error.message)}`);
   }
 
-  redirect("/browse");
+  redirect("/profiles");
 }
 
 export async function signOutAction() {
+  const cookieStore = await cookies();
+  cookieStore.delete(ACTIVE_PROFILE_COOKIE);
+
   if (hasSupabaseEnv()) {
     const supabase = await createSupabaseServerClient();
     await supabase.auth.signOut();

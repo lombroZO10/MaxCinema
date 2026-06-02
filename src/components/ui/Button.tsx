@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ComponentProps, ReactNode } from "react";
+import type { ComponentProps, MouseEventHandler, ReactNode } from "react";
 import { cn } from "@/utils/cn";
 
 type ButtonProps = ComponentProps<"button"> & {
@@ -28,8 +28,10 @@ export function Button({
   );
 
   if (href) {
+    const onLinkClick = props.onClick as unknown as MouseEventHandler<HTMLAnchorElement> | undefined;
+
     return (
-      <Link className={classes} href={href}>
+      <Link className={classes} href={href} onClick={onLinkClick}>
         {icon}
         {children}
       </Link>

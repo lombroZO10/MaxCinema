@@ -57,6 +57,12 @@ The same SQL is also available as a migration at:
 supabase/migrations/20260529143000_initial_maxcinema.sql
 ```
 
+Admin Studio additions are in:
+
+```text
+supabase/migrations/20260529162000_admin_studio.sql
+```
+
 Without Supabase env vars, the app runs in mock/demo mode so the visual product can be reviewed locally.
 
 After running the SQL:
