@@ -3,9 +3,8 @@ import { ContinueWatchingCard } from "@/components/movie/ContinueWatchingCard";
 import { HeroFeature } from "@/components/movie/HeroFeature";
 import { MovieRail } from "@/components/movie/MovieRail";
 import { PersonalizedSection } from "@/components/recommendation/PersonalizedSection";
-import { TrendingSection } from "@/components/recommendation/TrendingSection";
 import { getCatalogMovies, getFeaturedMovie, getRails } from "@/services/catalog-service";
-import { buildMaxCinemaIntelligence, getLiveRecommendationSignals } from "@/services/recommendation/recommendation-engine";
+import { getPersonalizedSections } from "@/services/recommendation/recommendation-engine";
 import { getPublicSettings, getSettingValue } from "@/services/settings/settings-service";
 import { getFavoriteMovieIds, getWatchProgressItems } from "@/services/user-library-service";
 
@@ -24,12 +23,13 @@ export default async function BrowsePage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const query = getSearchValue(await searchParams);
-  const [featured, rails, favoriteIds, continueWatching, catalog] = await Promise.all([
+  const [featured, rails, favoriteIds, continueWatching, catalog, intelligenceRows] = await Promise.all([
     getFeaturedMovie(),
     getRails(),
     getFavoriteMovieIds(),
     getWatchProgressItems(),
     getCatalogMovies(),
+    getPersonalizedSections(),
   ]);
   const settings = await getPublicSettings();
   const showRecommendations = getSettingValue(settings, "browse.showRecommendations", true);
@@ -39,9 +39,6 @@ export default async function BrowsePage({
   const showGenres = getSettingValue(settings, "browse.showGenres", true);
   const showFavoriteButton = getSettingValue(settings, "player.showFavoriteButton", true);
   const posterFallbackUrl = getSettingValue(settings, "identity.posterFallbackUrl", "");
-  const signals = await getLiveRecommendationSignals(catalog);
-  const intelligence = buildMaxCinemaIntelligence({ movies: catalog, favoriteIds, progressItems: continueWatching, signals });
-
   const movies = catalog.filter((movie) => movie.type === "movie");
   const series = catalog.filter((movie) => movie.type === "series");
   const searchResults = query
@@ -106,7 +103,7 @@ export default async function BrowsePage({
         ) : null}
 
         <div className="space-y-11 lg:space-y-14 xl:space-y-12">
-          {showRecommendations ? <PersonalizedSection favoriteIds={favoriteIds} rows={intelligence.rows.slice(0, 2)} /> : null}
+          {showRecommendations ? <PersonalizedSection favoriteIds={favoriteIds} rows={intelligenceRows.slice(0, 2)} /> : null}
 
           {movies.length ? (
             <div id="filmes">
@@ -119,8 +116,6 @@ export default async function BrowsePage({
               <MovieRail favoriteIds={favoriteIds} movies={series} posterFallbackUrl={posterFallbackUrl} showDuration={showDuration} showFavoriteButton={showFavoriteButton} showGenres={showGenres} showRating={showRating} title="Series no MaxCinema" />
             </div>
           ) : null}
-
-          {showRecommendations ? <TrendingSection favoriteIds={favoriteIds} items={intelligence.trending} /> : null}
 
           {rails.map((rail) => (
             <div id={rail.title.includes("Originais") ? "originais" : undefined} key={rail.title}>
@@ -141,7 +136,7 @@ export default async function BrowsePage({
             </div>
           ))}
 
-          {showRecommendations ? <PersonalizedSection favoriteIds={favoriteIds} rows={intelligence.rows.slice(2)} /> : null}
+          {showRecommendations ? <PersonalizedSection favoriteIds={favoriteIds} rows={intelligenceRows.slice(2)} /> : null}
         </div>
       </main>
     </AppShell>

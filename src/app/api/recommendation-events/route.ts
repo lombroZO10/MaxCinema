@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { recordRecommendationEvent, type RecommendationEvent } from "@/services/recommendation/recommendation-events";
 
 const allowedEvents = new Set<RecommendationEvent>([
+  "view",
+  "click",
   "shown",
   "clicked",
   "play",
@@ -9,6 +11,7 @@ const allowedEvents = new Set<RecommendationEvent>([
   "completed",
   "favorite_added",
   "favorite_removed",
+  "dismiss",
 ]);
 
 export async function POST(request: NextRequest) {

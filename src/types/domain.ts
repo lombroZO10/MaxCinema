@@ -59,7 +59,7 @@ export type CollectionItem = {
   createdAt?: string;
 };
 
-export type HomeSectionSourceType = "manual" | "collection" | "dynamic";
+export type HomeSectionSourceType = "manual" | "collection" | "recommendation" | "dynamic";
 
 export type HomeSectionWithItems = {
   id: string;

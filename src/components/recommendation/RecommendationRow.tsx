@@ -13,7 +13,7 @@ export function RecommendationRow({
     <PremiumRowCarousel badge="Curadoria" subtitle={row.description} title={row.title}>
       {row.items.map((item) => (
         <div className="snap-start" key={`${row.id}-${item.movie.id}`}>
-          <RecommendationCard favorite={favoriteIds.includes(item.movie.id)} item={item} />
+          <RecommendationCard favorite={favoriteIds.includes(item.movie.id)} item={item} sectionSlug={row.id} />
         </div>
       ))}
     </PremiumRowCarousel>

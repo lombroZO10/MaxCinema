@@ -10,12 +10,13 @@ import { formatDuration } from "@/utils/format";
 export function RecommendationCard({
   item,
   favorite = false,
+  sectionSlug = "personalized",
 }: {
   item: ScoredMovie;
   favorite?: boolean;
+  sectionSlug?: string;
 }) {
   const { movie } = item;
-  const sectionSlug = "personalized";
   const eventPayload = {
     movieId: movie.id,
     sectionSlug,

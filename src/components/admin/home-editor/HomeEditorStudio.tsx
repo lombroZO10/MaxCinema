@@ -22,6 +22,7 @@ import {
   reorderHomeSectionsAction,
   updateHomeSectionAction,
 } from "@/app/admin/actions";
+import { RECOMMENDATION_SECTION_OPTIONS } from "@/services/recommendation/recommendation-types";
 import type { AdminHomeSection } from "@/services/admin-service";
 import type { Collection, Movie } from "@/types/domain";
 import { cn } from "@/utils/cn";
@@ -56,6 +57,7 @@ function formatRelative(value?: string) {
 function sourceLabel(section: AdminHomeSection) {
   const st = section.sourceType ?? "manual";
   if (st === "collection") return "Colecao";
+  if (st === "recommendation") return "Intelligence";
   if (st === "dynamic") return "Automatica";
   return "Manual";
 }
@@ -318,6 +320,7 @@ export function HomeEditorStudio({
                       <select className="mt-2 h-11 w-full rounded-md border border-white/10 bg-[#07111a] px-3 text-sm text-white outline-none" defaultValue={section.sourceType ?? "manual"} name="sourceType">
                         <option value="manual">manual</option>
                         <option value="collection">collection</option>
+                        <option value="recommendation">recommendation</option>
                       </select>
                     </label>
                     <label className="text-xs font-semibold text-white/55 md:col-span-2">
@@ -327,6 +330,16 @@ export function HomeEditorStudio({
                         {collections.map((c) => (
                           <option key={c.id} value={c.id}>
                             {c.title} ({c.status})
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="text-xs font-semibold text-white/55 md:col-span-2">
+                      Intelligence (quando fonte=recommendation)
+                      <select className="mt-2 h-11 w-full rounded-md border border-white/10 bg-[#07111a] px-3 text-sm text-white outline-none" defaultValue={section.sourceKey ?? "recommended_for_you"} name="sourceKey">
+                        {RECOMMENDATION_SECTION_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
                           </option>
                         ))}
                       </select>
@@ -362,7 +375,7 @@ export function HomeEditorStudio({
                     </button>
                   </form>
 
-                  {(section.sourceType ?? "manual") !== "collection" ? (
+                  {(section.sourceType ?? "manual") === "manual" ? (
                     <div className="mt-4 rounded-lg border border-white/10 bg-black/18 p-4">
                       <p className="text-xs font-semibold uppercase text-white/42">Itens manuais</p>
                       <form action={addHomeSectionItemAction.bind(null, section.id)} className="mt-3 grid gap-2 md:grid-cols-[1fr_110px_auto]">
@@ -387,7 +400,7 @@ export function HomeEditorStudio({
                         sectionId={section.id}
                       />
                     </div>
-                  ) : (
+                  ) : section.sourceType === "collection" ? (
                     <div className="mt-4 rounded-lg border border-white/10 bg-black/18 p-4 text-sm text-white/55">
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
@@ -413,7 +426,16 @@ export function HomeEditorStudio({
                       ) : null}
                       <p className="mt-3 text-xs text-white/42">Os filmes sao lidos direto de collection_items. Nao ha copia em home_section_items.</p>
                     </div>
-                  )}
+                  ) : null}
+                  {section.sourceType === "recommendation" ? (
+                    <div className="mt-4 rounded-lg border border-cinema-cyan/20 bg-cinema-cyan/[0.055] p-4 text-sm text-white/62">
+                      <p className="text-xs font-semibold uppercase text-cinema-cyan">Intelligence Engine</p>
+                      <p className="mt-2 text-white/72">
+                        Esta secao e gerada pela recommendation engine. Ela respeita published, perfil ativo, favoritos, progresso, display_limit e anti-repeticao.
+                      </p>
+                      <p className="mt-2 text-xs text-white/45">Algoritmo: {section.sourceKey ?? "recommended_for_you"}</p>
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
             </article>
@@ -526,6 +548,7 @@ export function HomeEditorStudio({
                   <select className="mt-2 h-11 w-full rounded-md border border-white/10 bg-[#07111a] px-3 text-sm text-white outline-none" defaultValue="manual" name="sourceType">
                     <option value="manual">manual</option>
                     <option value="collection">collection</option>
+                    <option value="recommendation">recommendation</option>
                   </select>
                 </label>
               </div>
@@ -542,6 +565,16 @@ export function HomeEditorStudio({
                 <span className="mt-2 block text-xs font-normal text-white/45">
                   Dica: se voce escolher <span className="text-white/65">Fonte = collection</span> mas nao selecionar uma colecao, a secao fica vazia e nao aparece no Browse.
                 </span>
+              </label>
+              <label className="block text-xs font-semibold text-white/55">
+                Intelligence (quando fonte=recommendation)
+                <select className="mt-2 h-11 w-full rounded-md border border-white/10 bg-[#07111a] px-3 text-sm text-white outline-none" defaultValue="recommended_for_you" name="sourceKey">
+                  {RECOMMENDATION_SECTION_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <label className="block text-xs font-semibold text-white/55">

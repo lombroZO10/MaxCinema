@@ -16,6 +16,21 @@ export default async function AdminAnalyticsPage() {
 
       <AdminChartCard />
 
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {[
+          ["Views intelligence", recommendations.views],
+          ["Cliques intelligence", recommendations.clicks],
+          ["CTR", `${recommendations.ctr}%`],
+          ["Secoes ativas", recommendations.activeIntelligenceSections],
+        ].map(([label, value]) => (
+          <div className="rounded-xl border border-white/10 bg-white/[0.035] p-5" key={String(label)}>
+            <p className="text-xs font-semibold uppercase text-white/38">{label}</p>
+            <p className="mt-3 text-3xl font-semibold text-white">{String(value)}</p>
+            <p className="mt-1 text-xs text-white/42">Intelligence Engine</p>
+          </div>
+        ))}
+      </section>
+
       <section className="grid gap-4 xl:grid-cols-[1.2fr_.8fr]">
         <div className="rounded-xl border border-white/10 bg-white/[0.035] p-5">
           <div className="mb-5 flex items-center justify-between gap-4">
@@ -55,6 +70,45 @@ export default async function AdminAnalyticsPage() {
                 <p className="mt-2 text-sm text-cinema-muted">{signal.description}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-2">
+        <div className="rounded-xl border border-white/10 bg-white/[0.035] p-5">
+          <p className="text-sm font-semibold text-cinema-cyan">Performance</p>
+          <h2 className="mt-1 text-2xl font-semibold text-white">Secoes com melhor CTR</h2>
+          <div className="mt-5 space-y-3">
+            {recommendations.sectionPerformance.length ? recommendations.sectionPerformance.map((section) => (
+              <div className="rounded-lg border border-white/8 bg-black/24 p-4" key={section.sectionSlug}>
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold text-white">{section.sectionSlug}</p>
+                  <span className="text-cinema-cyan">{section.ctr}%</span>
+                </div>
+                <p className="mt-2 text-sm text-cinema-muted">{section.views} views / {section.clicks} cliques</p>
+              </div>
+            )) : (
+              <p className="rounded-lg border border-dashed border-white/12 p-4 text-sm text-cinema-muted">Sem eventos de recomendacao registrados ainda.</p>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-white/10 bg-white/[0.035] p-5">
+          <p className="text-sm font-semibold text-cinema-cyan">Cliques</p>
+          <h2 className="mt-1 text-2xl font-semibold text-white">Conteudos mais clicados</h2>
+          <div className="mt-5 space-y-3">
+            {recommendations.topClicked.length ? recommendations.topClicked.map((item) => (
+              <div className="grid grid-cols-[52px_1fr_auto] items-center gap-3 rounded-lg border border-white/8 bg-black/24 p-3" key={item.movie.id}>
+                <img alt="" className="size-12 rounded-md object-cover" src={item.movie.posterUrl} />
+                <div>
+                  <p className="font-semibold text-white">{item.movie.title}</p>
+                  <p className="text-xs text-cinema-muted">{item.movie.genres.map((genre) => genre.name).join(" / ")}</p>
+                </div>
+                <span className="text-lg font-semibold text-cinema-cyan">{item.clicks}</span>
+              </div>
+            )) : (
+              <p className="rounded-lg border border-dashed border-white/12 p-4 text-sm text-cinema-muted">Sem cliques registrados ainda.</p>
+            )}
           </div>
         </div>
       </section>

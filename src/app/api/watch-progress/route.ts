@@ -58,6 +58,19 @@ export async function POST(request: NextRequest) {
   }
 
   const completionRatio = durationSeconds > 0 ? progressSeconds / durationSeconds : 0;
+  await supabase.from("content_views").insert({
+    user_id: userData.user.id,
+    profile_id: activeProfile.id,
+    movie_id: body.movieId,
+    source: "player",
+    watch_seconds: progressSeconds,
+    completed: completionRatio >= 0.85,
+    metadata: {
+      durationSeconds,
+      completionRatio: Math.round(completionRatio * 100) / 100,
+    },
+  });
+
   await recordRecommendationEvent({
     movieId: body.movieId,
     event: completionRatio >= 0.85 ? "completed" : "progress",

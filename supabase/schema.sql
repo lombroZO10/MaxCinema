@@ -7,7 +7,7 @@ create type public.subscription_provider as enum ('stripe', 'mercado_pago');
 create type public.collection_status as enum ('draft', 'published', 'archived', 'scheduled');
 create type public.collection_visibility as enum ('public', 'hidden', 'members_only', 'kids');
 create type public.collection_type as enum ('manual', 'dynamic', 'seasonal', 'top_10', 'originals', 'trending', 'recommended', 'editorial');
-create type public.home_section_source_type as enum ('manual', 'collection', 'dynamic');
+create type public.home_section_source_type as enum ('manual', 'collection', 'recommendation', 'dynamic');
 
 create table public.profiles (
   id uuid primary key default gen_random_uuid(),
@@ -148,6 +148,8 @@ create table if not exists public.home_sections (
   active boolean not null default true,
   source_type public.home_section_source_type not null default 'manual',
   source_id uuid,
+  source_key text,
+  subtitle text,
   layout_variant text,
   display_limit integer,
   show_collection_banner boolean not null default false,
@@ -397,6 +399,8 @@ create table if not exists public.home_section_items (
 alter table public.home_sections
   add column if not exists source_type public.home_section_source_type not null default 'manual',
   add column if not exists source_id uuid,
+  add column if not exists source_key text,
+  add column if not exists subtitle text,
   add column if not exists layout_variant text,
   add column if not exists display_limit integer,
   add column if not exists show_collection_banner boolean not null default false,
@@ -457,15 +461,71 @@ create table if not exists public.content_activity (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.user_preferences (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  profile_id uuid references public.viewer_profiles(id) on delete cascade,
+  action text not null,
+  genre_id uuid references public.genres(id) on delete cascade,
+  score integer not null default 0,
+  metadata jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.recommendation_logs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete set null,
+  profile_id uuid references public.viewer_profiles(id) on delete cascade,
+  movie_id uuid references public.movies(id) on delete cascade,
+  section_slug text not null,
+  section_title text,
+  recommendation_score numeric(7,2) not null default 0,
+  reason text,
+  event text not null default 'shown',
+  event_type text not null default 'view',
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.content_scores (
+  id uuid primary key default gen_random_uuid(),
+  movie_id uuid not null unique references public.movies(id) on delete cascade,
+  popularity_score numeric(7,2) not null default 0,
+  quality_score numeric(7,2) not null default 0,
+  completion_score numeric(7,2) not null default 0,
+  favorite_score numeric(7,2) not null default 0,
+  recommendation_score numeric(7,2) not null default 0,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.content_views (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete set null,
+  profile_id uuid references public.viewer_profiles(id) on delete cascade,
+  movie_id uuid not null references public.movies(id) on delete cascade,
+  source text not null default 'browse',
+  watch_seconds integer not null default 0,
+  completed boolean not null default false,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
 create index if not exists movies_sort_order_idx on public.movies (sort_order, created_at desc);
 create index if not exists movies_original_idx on public.movies (is_original) where is_original = true;
 create index if not exists home_sections_position_idx on public.home_sections (active, position);
 create index if not exists home_sections_source_idx on public.home_sections (source_type, source_id);
+create index if not exists home_sections_recommendation_source_idx on public.home_sections (source_type, source_key, position) where source_type = 'recommendation';
 create index if not exists home_section_items_position_idx on public.home_section_items (section_id, position);
 create index if not exists media_assets_type_idx on public.media_assets (type, created_at desc);
 create index if not exists media_assets_bucket_path_idx on public.media_assets (bucket, path);
 create index if not exists media_assets_mime_created_idx on public.media_assets (mime_type, created_at desc) where mime_type is not null;
 create index if not exists content_activity_entity_idx on public.content_activity (entity_type, entity_id, created_at desc);
+create index if not exists user_preferences_user_idx on public.user_preferences (user_id, score desc);
+create index if not exists recommendation_logs_user_idx on public.recommendation_logs (user_id, created_at desc);
+create index if not exists recommendation_logs_movie_idx on public.recommendation_logs (movie_id, event, created_at desc);
+create index if not exists recommendation_logs_section_event_idx on public.recommendation_logs (section_slug, event_type, created_at desc);
+create index if not exists content_scores_recommendation_idx on public.content_scores (recommendation_score desc);
+create index if not exists content_views_movie_created_idx on public.content_views (movie_id, created_at desc);
 create index if not exists site_settings_group_idx on public.site_settings ("group", key);
 create index if not exists site_settings_public_idx on public.site_settings (is_public) where is_public = true;
 
@@ -474,6 +534,10 @@ alter table public.home_section_items enable row level security;
 alter table public.media_assets enable row level security;
 alter table public.site_settings enable row level security;
 alter table public.content_activity enable row level security;
+alter table public.user_preferences enable row level security;
+alter table public.recommendation_logs enable row level security;
+alter table public.content_scores enable row level security;
+alter table public.content_views enable row level security;
 
 drop trigger if exists home_sections_touch_updated_at on public.home_sections;
 create trigger home_sections_touch_updated_at
@@ -520,6 +584,30 @@ create policy "Admins write site settings" on public.site_settings
 
 create policy "Admins write activity" on public.content_activity
   for all using (public.is_admin()) with check (public.is_admin());
+
+create policy "Users read own preferences" on public.user_preferences
+  for select using (auth.uid() = user_id or public.is_admin());
+
+create policy "Users write own preferences" on public.user_preferences
+  for all using (auth.uid() = user_id or public.is_admin()) with check (auth.uid() = user_id or public.is_admin());
+
+create policy "Users read own recommendation logs" on public.recommendation_logs
+  for select using (auth.uid() = user_id or public.is_admin());
+
+create policy "Users write own recommendation logs" on public.recommendation_logs
+  for insert with check (auth.uid() = user_id or public.is_admin());
+
+create policy "Content scores are visible" on public.content_scores
+  for select using (true);
+
+create policy "Admins write content scores" on public.content_scores
+  for all using (public.is_admin()) with check (public.is_admin());
+
+create policy "Users read own content views" on public.content_views
+  for select using (auth.uid() = user_id or public.is_admin());
+
+create policy "Users write own content views" on public.content_views
+  for insert with check (auth.uid() = user_id or public.is_admin());
 
 insert into public.home_sections (title, slug, type, position, active)
 values

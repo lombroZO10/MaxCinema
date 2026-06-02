@@ -30,6 +30,7 @@ export type AdminHomeSection = {
   active: boolean;
   sourceType: HomeSectionSourceType;
   sourceId?: string | null;
+  sourceKey?: string | null;
   layoutVariant?: string | null;
   displayLimit?: number | null;
   showCollectionBanner: boolean;
@@ -696,9 +697,7 @@ export async function getAdminHomeSections(): Promise<AdminHomeSection[]> {
 
   try {
     const supabase = await createSupabaseServerClient();
-    const { data, error } = await supabase
-      .from("home_sections")
-      .select(`
+    const sectionSelect = `
         id,
         title,
         slug,
@@ -707,6 +706,7 @@ export async function getAdminHomeSections(): Promise<AdminHomeSection[]> {
         active,
         source_type,
         source_id,
+        source_key,
         layout_variant,
         display_limit,
         show_collection_banner,
@@ -732,8 +732,19 @@ export async function getAdminHomeSections(): Promise<AdminHomeSection[]> {
             status
           )
         )
-      `)
+      `;
+    const legacySectionSelect = sectionSelect.replace("source_key,", "");
+    let response: { data: unknown[] | null; error: { message: string } | null } = await supabase
+      .from("home_sections")
+      .select(sectionSelect)
       .order("position", { ascending: true });
+    if (response.error && response.error.message.includes("source_key")) {
+      response = await supabase
+        .from("home_sections")
+        .select(legacySectionSelect)
+        .order("position", { ascending: true });
+    }
+    const { data, error } = response;
 
     if (error || !data?.length) return fallback;
 
@@ -746,6 +757,7 @@ export async function getAdminHomeSections(): Promise<AdminHomeSection[]> {
       active: boolean | null;
       source_type: HomeSectionSourceType | null;
       source_id: string | null;
+      source_key: string | null;
       layout_variant: string | null;
       display_limit: number | null;
       show_collection_banner: boolean | null;
@@ -782,6 +794,7 @@ export async function getAdminHomeSections(): Promise<AdminHomeSection[]> {
             active: Boolean(section.active),
             sourceType,
             sourceId,
+            sourceKey: section.source_key,
             layoutVariant: section.layout_variant,
             displayLimit: section.display_limit,
             showCollectionBanner: Boolean(section.show_collection_banner),
@@ -816,6 +829,7 @@ export async function getAdminHomeSections(): Promise<AdminHomeSection[]> {
         active: Boolean(section.active),
         sourceType,
         sourceId,
+        sourceKey: section.source_key,
         layoutVariant: section.layout_variant,
         displayLimit: section.display_limit,
         showCollectionBanner: Boolean(section.show_collection_banner),

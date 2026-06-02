@@ -4,13 +4,16 @@ import { getActiveViewerProfile } from "@/services/profile/viewer-profile-servic
 import { isUuid } from "@/utils/uuid";
 
 export type RecommendationEvent =
+  | "view"
+  | "click"
   | "shown"
   | "clicked"
   | "play"
   | "progress"
   | "completed"
   | "favorite_added"
-  | "favorite_removed";
+  | "favorite_removed"
+  | "dismiss";
 
 export type RecommendationEventPayload = {
   movieId: string;
@@ -45,15 +48,16 @@ export async function recordRecommendationEvent({
     return { ok: false, error: "Active profile is required" };
   }
 
+  const rpcEvent = event === "view" ? "shown" : event === "click" ? "clicked" : event;
   const { error } = await supabase.rpc("record_recommendation_event", {
     p_user_id: userData.user.id,
     p_profile_id: activeProfile.id,
     p_movie_id: movieId,
-    p_event: event,
+    p_event: rpcEvent,
     p_section_slug: sectionSlug,
     p_recommendation_score: score,
     p_reason: reason,
-    p_metadata: metadata,
+    p_metadata: { ...metadata, eventType: event },
   });
 
   if (error) {

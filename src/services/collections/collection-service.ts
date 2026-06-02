@@ -1,6 +1,14 @@
 import { hasSupabaseEnv } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCatalogMovies } from "@/services/catalog-service";
+import {
+  getHighRatedContent,
+  getNewReleasesForYou,
+  getPopularOnMaxCinema,
+  getRecommendedForYou,
+  getTonightPicks,
+  getTrendingForProfile,
+} from "@/services/recommendation/recommendation-engine";
 import type {
   Collection,
   CollectionItem,
@@ -132,6 +140,47 @@ function isPublicCollection(collection: Collection) {
 
 function orderItems(items: CollectionItem[]) {
   return [...items].sort((a, b) => Number(b.pinned) - Number(a.pinned) || a.position - b.position);
+}
+
+function isDynamicCollection(collection: Collection) {
+  return ["dynamic", "top_10", "originals", "trending", "recommended"].includes(collection.type);
+}
+
+async function getDynamicCollectionItems(collection: Collection, { includeDrafts = false, limit }: { includeDrafts?: boolean; limit?: number | null } = {}) {
+  const resolvedLimit = limit && limit > 0 ? limit : 10;
+  let movies: Movie[];
+
+  if (collection.type === "top_10") {
+    movies = (await getHighRatedContent(resolvedLimit)).items.map((item) => item.movie);
+  } else if (collection.type === "trending") {
+    movies = (await getTrendingForProfile(resolvedLimit)).items.map((item) => item.movie);
+  } else if (collection.type === "recommended") {
+    movies = (await getRecommendedForYou(resolvedLimit)).items.map((item) => item.movie);
+  } else if (collection.type === "originals") {
+    movies = (await getCatalogMovies({ includeDrafts })).filter((movie) => movie.genres.some((genre) => genre.slug === "original"));
+  } else {
+    const title = `${collection.title} ${collection.slug}`.toLocaleLowerCase("pt-BR");
+    if (title.includes("noite") || title.includes("tonight")) {
+      movies = (await getTonightPicks(resolvedLimit)).items.map((item) => item.movie);
+    } else if (title.includes("lanc")) {
+      movies = (await getNewReleasesForYou(resolvedLimit)).items.map((item) => item.movie);
+    } else {
+      movies = (await getPopularOnMaxCinema(resolvedLimit)).items.map((item) => item.movie);
+    }
+  }
+
+  return movies
+    .filter((movie) => includeDrafts || movie.status === "published")
+    .slice(0, resolvedLimit)
+    .map((movie, index) => ({
+      id: `dynamic-${collection.id}-${movie.id}`,
+      collectionId: collection.id,
+      movie,
+      position: index,
+      pinned: false,
+      note: "dynamic",
+      createdAt: collection.updatedAt,
+    })) satisfies CollectionItem[];
 }
 
 function demoCollections(): Collection[] {
@@ -341,6 +390,12 @@ export async function duplicateCollection(collectionId: string, actorId?: string
 }
 
 export async function getCollectionItems(collectionId: string, { includeDrafts = false, limit }: { includeDrafts?: boolean; limit?: number | null } = {}) {
+  const collection = await getCollectionById(collectionId, { includeDrafts: true });
+  if (collection && isDynamicCollection(collection)) {
+    if (!includeDrafts && !isPublicCollection(collection)) return [];
+    return getDynamicCollectionItems(collection, { includeDrafts, limit });
+  }
+
   if (!hasSupabaseEnv()) {
     const catalog = await getCatalogMovies({ includeDrafts: true });
     const items = catalog.slice(0, limit ?? 10).map((movie, index) => ({

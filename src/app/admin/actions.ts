@@ -1296,6 +1296,7 @@ export async function createHomeSectionAction(formData: FormData) {
   const rawSlug = text(formData, "slug");
   const sourceType = text(formData, "sourceType") || (text(formData, "type") === "collection" ? "collection" : "manual");
   const sourceId = text(formData, "sourceId") || null;
+  const sourceKey = text(formData, "sourceKey") || null;
   const { supabase, userId } = await assertAdmin();
   const { data, error } = await supabase
     .from("home_sections")
@@ -1307,6 +1308,7 @@ export async function createHomeSectionAction(formData: FormData) {
       active: formData.get("active") === "on",
       source_type: sourceType,
       source_id: sourceType === "collection" ? sourceId : null,
+      source_key: sourceType === "recommendation" || sourceType === "dynamic" ? sourceKey : null,
       layout_variant: text(formData, "layoutVariant") || null,
       display_limit: intOrNull(text(formData, "displayLimit")),
       show_collection_banner: formData.get("showCollectionBanner") === "on",
@@ -1336,6 +1338,7 @@ export async function updateHomeSectionAction(sectionId: string, formData: FormD
   const rawSlug = text(formData, "slug");
   const sourceType = text(formData, "sourceType") || (text(formData, "type") === "collection" ? "collection" : "manual");
   const sourceId = text(formData, "sourceId") || null;
+  const sourceKey = text(formData, "sourceKey") || null;
   const { supabase, userId } = await assertAdmin();
   const { error } = await supabase
     .from("home_sections")
@@ -1347,6 +1350,7 @@ export async function updateHomeSectionAction(sectionId: string, formData: FormD
       active: formData.get("active") === "on",
       source_type: sourceType,
       source_id: sourceType === "collection" ? sourceId : null,
+      source_key: sourceType === "recommendation" || sourceType === "dynamic" ? sourceKey : null,
       layout_variant: text(formData, "layoutVariant") || null,
       display_limit: intOrNull(text(formData, "displayLimit")),
       show_collection_banner: formData.get("showCollectionBanner") === "on",
